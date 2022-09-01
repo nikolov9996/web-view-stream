@@ -5,14 +5,12 @@ import {
   getStream,
   vlrFree,
   updateMetaData,
-  playedSuccess,
+  // playedSuccess,
   vlrPing,
 } from "./services/api";
 import { vertoSession } from "./services/rtc";
 
 function App() {
-  const [jwt, setJwt] = useState("");
-  const [streamId, setStreamId] = useState("");
   const [streamUrl, setStreamUrl] = useState("");
   const [canPlay, setCanPlay] = useState(false);
   const [mUser, setMUser] = useState("");
@@ -24,6 +22,12 @@ function App() {
   const localStreamRef = useRef(null);
   const remoteStream = useRef(null);
 
+  const params = new URLSearchParams(window.location.search);
+
+  const token = params.get("token");
+  const phoneNumber = "+" + params.get("phoneNumber");
+  const streamId = params.get("roomId");
+
   useEffect(() => {
     navigator.mediaDevices
       .getUserMedia({
@@ -32,6 +36,10 @@ function App() {
       })
       .then((x) => {
         localStreamRef.current.srcObject = x;
+      })
+      .finally(async () => {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        await start();
       });
   }, []);
 
@@ -63,7 +71,7 @@ function App() {
           vertoSession(
             mUser,
             mPass,
-            { stream:  capturedStream},
+            { stream: capturedStream },
             roomID,
             remoteStream,
             localStreamRef.current.srcObject
@@ -77,7 +85,7 @@ function App() {
     play().catch((e) => console.log(e));
   };
 
-  const start = async () => {
+  async function start() {
     setCanPlay(false);
     const {
       data: { url, name, language, genre },
@@ -85,13 +93,15 @@ function App() {
     setStreamUrl(url);
     const {
       data: { public_id, moderator_password, moderator_username, room_id },
-    } = await vlrFree(jwt);
+    } = await vlrFree(token, phoneNumber);
 
     setRoomID(room_id);
     setMUser(moderator_username);
     setMPass(moderator_password);
 
-    await updateMetaData(jwt, {
+    await updateMetaData({
+      token,
+      phoneNumber,
       roomId: public_id,
       streamId,
       streamUrl: url,
@@ -111,19 +121,19 @@ function App() {
     setInterval(cb, 25000);
 
     setCanPlay(true);
-  };
+  }
 
   const handlePlaySuc = async () => {
-    const resp = await playedSuccess(streamId, jwt);
-    console.log(resp);
+    // const resp = await playedSuccess(streamId, token, phoneNumber);
+    // console.log(resp);
   };
 
   return (
-    <div>
-      {canPlay && (
+    <div style={{ height: "100vh", width: "100vw" }}>
+      {canPlay  && (
         <ReactPlayer
-        style={{visibility:"hidden"}}
-          width={800}
+          style={{ position: "absolute", visibility: "hidden" }}
+          width={100}
           height="auto"
           ref={streamRef}
           controls
@@ -137,29 +147,27 @@ function App() {
       <video
         muted
         autoPlay
-        controls
-        style={{ height: "auto", width: 400 }}
+        style={{ visibility: "hidden", position: "absolute" }}
         ref={localStreamRef}
       ></video>
-      remote video here
       <video
-        muted
         autoPlay
-        controls
-        style={{ height: "auto", width: 400 }}
+        style={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          left: 0,
+          right: 0,
+          margin: "auto",
+          width: "100vw",
+          height: "100vh",
+        }}
         ref={remoteStream}
-        src={remoteStream.current}
+        // src={remoteStream.current}
       ></video>
       <audio ref={audioRef} hidden />
-      <input
-        placeholder="room id"
-        onChange={({ target }) => setStreamId(target.value)}
-      />
-      <input
-        placeholder="jwt"
-        onChange={({ target }) => setJwt(target.value)}
-      />
-      <button onClick={start}>create room and join</button>
+
+      <button style={{zIndex:9999,position:"relative", top:300}} onClick={start}>Join Room  {streamId}</button>
     </div>
   );
 }

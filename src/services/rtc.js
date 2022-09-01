@@ -191,13 +191,13 @@ async function peerConnection(options) {
       pc = new RTCPeerConnection({ iceServers });
       pc2 = new RTCPeerConnection({ iceServers });
 
-      if (stream.getAudioTracks().length) {
+      // if (stream.getAudioTracks().length) {
         await pc.addTrack(stream.getAudioTracks()[0]);
-      }
+      // }
 
-      if (stream.getVideoTracks().length) {
+      // if (stream.getVideoTracks().length) {
         await pc.addTrack(stream.getVideoTracks()[0]);
-      }
+      // }
 
       const offer = await pc.createOffer({
         offerToReceiveAudio: true,
